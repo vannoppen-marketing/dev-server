@@ -284,11 +284,3 @@
       args:
         creates: "/usr/local/bin/heroku"
         executable: /bin/bash
-
-    - name: DOTFILES - Pull and setup personal dot files
-      become_user: "{{ username }}"
-      shell: |
-        curl https://raw.githubusercontent.com/overshard/dot-files/master/bootstrap.sh | sh
-      args:
-        creates: "/home/{{ username }}/code/overshard/dot-files"
-        executable: /bin/bash
