@@ -1,0 +1,294 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+  vars:
+    username: "{{ lookup('env', 'USER') }}"
+
+
+  tasks:
+    - name: USERS - Allow new users to passwordless sudo
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: "^%sudo	ALL="
+        line: "%sudo	ALL=(ALL:ALL) NOPASSWD:ALL"
+        validate: /usr/sbin/visudo -cf %s
+
+    - name: PACKAGES - Add key for postgresql
+      apt_key: url=https://www.postgresql.org/media/keys/ACCC4CF8.asc state=present
+
+    - name: PACKAGES - Add repo for postgresql
+      apt_repository: repo='deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' state=present
+
+    - name: PACKAGES - Upgrade all packages
+      apt:
+        update_cache: yes
+        upgrade: full
+        state: latest
+
+    - name: PACKAGES - Install required system packages
+      apt:
+        state: latest
+        pkg:
+          - wget
+          - curl
+          - neovim
+          - git
+          - ufw
+          - redis
+          - postgresql
+          - python3-psycopg2
+          - python3-dev
+          - python2-dev
+          - libtiff5-dev
+          - libjpeg8-dev
+          - libopenjp2-7-dev
+          - zlib1g-dev
+          - libfreetype6-dev
+          - liblcms2-dev
+          - libwebp-dev
+          - tcl8.6-dev
+          - tk8.6-dev
+          - python3-tk
+          - libharfbuzz-dev
+          - libfribidi-dev
+          - libxcb1-dev
+          - acl
+          - build-essential
+          - libssl-dev
+          - zlib1g-dev
+          - libbz2-dev
+          - libreadline-dev
+          - libsqlite3-dev
+          - llvm
+          - libncurses5-dev
+          - libncursesw5-dev
+          - xz-utils
+          - tk-dev
+          - libffi-dev
+          - liblzma-dev
+          - python-openssl
+          - libpq-dev
+          - unattended-upgrades
+          - libpixman-1-dev
+          - libcairo2-dev
+          - libpango1.0-dev
+          - libgif-dev
+          - firefox
+          - linux-cloud-tools-virtual
+
+    - name: PACKAGES - Setup unattended upgrades
+      blockinfile:
+        path: /etc/apt/apt.conf.d/20auto-upgrades
+        create: yes
+        block: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+
+    - name: PACKAGES - Allow unattended upgrades to do normal updates
+      lineinfile:
+        path: /etc/apt/apt.conf.d/50unattended-upgrades
+        state: present
+        regexp: '^\/?\/?	"\${distro_id}:\${distro_codename}-updates";'
+        line: '	"${distro_id}:${distro_codename}-updates";'
+
+    - name: PACKAGES - Allow unattended upgrades to remove unused packages
+      lineinfile:
+        path: /etc/apt/apt.conf.d/50unattended-upgrades
+        state: present
+        regexp: '^\/?\/?Unattended-Upgrade::Remove-Unused-Dependencies '
+        line: 'Unattended-Upgrade::Remove-Unused-Dependencies "true";'
+
+    - name: PACKAGES - Allow unattended upgrades to remove unused kernel packages
+      lineinfile:
+        path: /etc/apt/apt.conf.d/50unattended-upgrades
+        state: present
+        regexp: '^\/?\/?Unattended-Upgrade::Remove-Unused-Kernel-Packages '
+        line: 'Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";'
+
+    - name: PACKAGES - Allow unattended upgrades to reboot
+      lineinfile:
+        path: /etc/apt/apt.conf.d/50unattended-upgrades
+        state: present
+        regexp: '^\/?\/?Unattended-Upgrade::Automatic-Reboot '
+        line: 'Unattended-Upgrade::Automatic-Reboot "true";'
+
+    - name: PACKAGES - Allow unattended upgrades to at specified time
+      lineinfile:
+        path: /etc/apt/apt.conf.d/50unattended-upgrades
+        state: present
+        regexp: '^\/?\/?Unattended-Upgrade::Automatic-Reboot-Time '
+        line: 'Unattended-Upgrade::Automatic-Reboot-Time "05:00";'
+
+    - name: UFW - Allow SSH connections
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: UFW - Deny all other incoming traffic by default
+      ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    - name: POSTGRESQL - Create development user
+      become_user: postgres
+      postgresql_user:
+        name: "{{ username }}"
+        role_attr_flags: SUPERUSER
+
+    - name: POSTGRESQL - Create development DB
+      become_user: postgres
+      postgresql_db:
+        name: "{{ username }}"
+        owner: "{{ username }}"
+
+    - name: POSTGRESQL - Trust local access ipv4
+      lineinfile:
+        path: /etc/postgresql/14/main/pg_hba.conf
+        state: present
+        regexp: "^host    all             all             127.0.0.1/32            "
+        line: "host    all             all             127.0.0.1/32            trust"
+
+    - name: POSTGRESQL - Trust local access ipv6
+      lineinfile:
+        path: /etc/postgresql/14/main/pg_hba.conf
+        state: present
+        regexp: "^host    all             all             ::1/128                 "
+        line: "host    all             all             ::1/128                 trust"
+
+    - name: NVM - Install nvm
+      become_user: "{{ username }}"
+      git:
+        repo: 'https://github.com/nvm-sh/nvm.git'
+        dest: "/home/{{ username }}/.nvm"
+        version: v0.37.0
+        depth: 1
+
+    - name: NVM - Add bash config
+      become_user: "{{ username }}"
+      blockinfile:
+        path: /home/{{ username }}/.bashrc
+        marker_begin: NVM BEGIN
+        marker_end: NVM END
+        block: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+    - name: NVM - Install node
+      become_user: "{{ username }}"
+      shell: |
+        . /home/{{ username }}/.nvm/nvm.sh && nvm install {{ item }}
+      args:
+        creates: "/home/{{ username }}/.nvm/versions/node/{{ item }}"
+        executable: /bin/bash
+      loop:
+        - v14.15.0
+
+    - name: NVM - Install yarn
+      become_user: "{{ username }}"
+      shell: |
+        . /home/{{ username }}/.nvm/nvm.sh && npm install -g yarn
+      args:
+        creates: "/home/{{ username }}/.nvm/versions/node/v14.15.0/bin/yarn"
+        executable: /bin/bash
+
+    - name: NVM - Install gulp-cli
+      become_user: "{{ username }}"
+      shell: |
+        . /home/{{ username }}/.nvm/nvm.sh && npm install -g gulp-cli
+      args:
+        creates: "/home/{{ username }}/.nvm/versions/node/v14.15.0/bin/gulp"
+        executable: /bin/bash
+
+    - name: NVM - Install expo-cli
+      become_user: "{{ username }}"
+      shell: |
+        . /home/{{ username }}/.nvm/nvm.sh && npm install -g expo-cli
+      args:
+        creates: "/home/{{ username }}/.nvm/versions/node/v14.15.0/bin/expo"
+        executable: /bin/bash
+
+    - name: NVM - Install vercel
+      become_user: "{{ username }}"
+      shell: |
+        . /home/{{ username }}/.nvm/nvm.sh && npm install -g vercel
+      args:
+        creates: "/home/{{ username }}/.nvm/versions/node/v14.15.0/bin/vercel"
+        executable: /bin/bash
+
+    - name: PYENV - Install pyenv
+      become_user: "{{ username }}"
+      git:
+        repo: 'https://github.com/pyenv/pyenv.git'
+        dest: "/home/{{ username }}/.pyenv"
+        version: v1.2.21
+        depth: 1
+
+    - name: PYENV - Add bash config
+      become_user: "{{ username }}"
+      blockinfile:
+        path: /home/{{ username }}/.bashrc
+        marker_begin: PYENV BEGIN
+        marker_end: PYENV END
+        block: |
+          export PYENV_ROOT="$HOME/.pyenv"
+          export PATH="$PYENV_ROOT/bin:$PATH"
+          if command -v pyenv 1>/dev/null 2>&1; then
+            eval "$(pyenv init -)"
+          fi
+
+    - name: PYENV - Install python versions
+      become_user: "{{ username }}"
+      shell: |
+        /home/{{ username }}/.pyenv/bin/pyenv install {{ item }}
+      args:
+        creates: "/home/{{ username }}/.pyenv/versions/{{ item }}"
+        executable: /bin/bash
+      loop:
+        - 2.7.18
+        - 3.6.12
+        - 3.7.9
+        - 3.8.6
+        - 3.9.0
+
+    - name: PYENV - Set global python
+      become_user: "{{ username }}"
+      shell: |
+        /home/{{ username }}/.pyenv/bin/pyenv global 3.9.0 3.8.6 3.7.9 3.6.12 2.7.18
+      args:
+        creates: "/home/{{ username }}/.pyenv/version"
+        executable: /bin/bash
+
+    - name: PYENV - Install pipenv, flake8, black for 3.9.0
+      become_user: "{{ username }}"
+      shell: |
+        /home/{{ username }}/.pyenv/versions/3.9.0/bin/pip install pipenv flake8 black isort
+      args:
+        creates: "/home/{{ username }}/.pyenv/versions/3.9.0/lib/python3.9/site-packages/pipenv"
+        executable: /bin/bash
+
+    - name: SYSCTL - Adjust number of watched files
+      lineinfile:
+        path: /etc/sysctl.conf
+        state: present
+        regexp: "^#?fs.inotify.max_user_watches"
+        line: "fs.inotify.max_user_watches=524288"
+
+    - name: HEROKU - Install Heroku CLI
+      become_user: "{{ username }}"
+      shell: |
+        curl https://cli-assets.heroku.com/install.sh | sh
+      args:
+        creates: "/usr/local/bin/heroku"
+        executable: /bin/bash
+
+    - name: DOTFILES - Pull and setup personal dot files
+      become_user: "{{ username }}"
+      shell: |
+        curl https://raw.githubusercontent.com/overshard/dot-files/master/bootstrap.sh | sh
+      args:
+        creates: "/home/{{ username }}/code/overshard/dot-files"
+        executable: /bin/bash
