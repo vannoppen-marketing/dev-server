@@ -68,7 +68,7 @@
           - tk-dev
           - libffi-dev
           - liblzma-dev
-          - python-openssl
+          - libssl-dev
           - libpq-dev
           - unattended-upgrades
           - libpixman-1-dev
