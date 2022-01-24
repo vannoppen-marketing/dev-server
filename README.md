@@ -8,7 +8,7 @@ To get this running on a fresh Ubuntu server:
 
     sudo apt update
     sudo apt install --yes ansible
-    ansible-pull --url https://github.com/overshard/dev-server/ playbook.yml
+    ansible-pull --url https://github.com/vannoppen-marketing/dev-server/ playbook.yml
     sudo reboot
 
 ## Post Install Tasks
