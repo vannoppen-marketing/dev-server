@@ -56,7 +56,7 @@
           - libxcb1-dev
           - acl
           - build-essential
-          - libssl-dev
+          - python-openssl
           - zlib1g-dev
           - libbz2-dev
           - libreadline-dev
