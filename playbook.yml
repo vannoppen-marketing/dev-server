@@ -230,7 +230,7 @@
     - name: PYENV - Add profile config
       become_user: "{{ username }}"
       blockinfile:
-        path: /home/{{ username }}/.bashrc
+        path: /home/{{ username }}/.profile
         marker_begin: PYENV BEGIN
         marker_end: PYENV END
         block: |
