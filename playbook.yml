@@ -275,7 +275,7 @@
     - name: PYENV - Install pipenv, flake8, black for 3.9.10
       become_user: "{{ username }}"
       shell: |
-        /home/{{ username }}/.pyenv/versions/3.9.10/bin/pip install pipenv flake8 black isort
+        /home/{{ username }}/.pyenv/versions/3.9.10/bin/pip install pipenv flake8 black isort psycopg2 ansible
       args:
         creates: "/home/{{ username }}/.pyenv/versions/3.9.10/lib/python3.9/site-packages/pipenv"
         executable: /bin/bash
