@@ -224,8 +224,19 @@
       git:
         repo: 'https://github.com/pyenv/pyenv.git'
         dest: "/home/{{ username }}/.pyenv"
-        version: v1.2.21
+        version: v2.2.4
         depth: 1
+
+    - name: PYENV - Add profile config
+      become_user: "{{ username }}"
+      blockinfile:
+        path: /home/{{ username }}/.bashrc
+        marker_begin: PYENV BEGIN
+        marker_end: PYENV END
+        block: |
+          export PYENV_ROOT="$HOME/.pyenv"
+          export PATH="$PYENV_ROOT/bin:$PATH"
+          eval "$(pyenv init --path)"
 
     - name: PYENV - Add bash config
       become_user: "{{ username }}"
@@ -236,9 +247,7 @@
         block: |
           export PYENV_ROOT="$HOME/.pyenv"
           export PATH="$PYENV_ROOT/bin:$PATH"
-          if command -v pyenv 1>/dev/null 2>&1; then
-            eval "$(pyenv init -)"
-          fi
+          eval "$(pyenv init -)"
 
     - name: PYENV - Install python versions
       become_user: "{{ username }}"
@@ -253,21 +262,22 @@
         - 3.7.9
         - 3.8.6
         - 3.9.0
+        - 3.9.10
 
     - name: PYENV - Set global python
       become_user: "{{ username }}"
       shell: |
-        /home/{{ username }}/.pyenv/bin/pyenv global 3.9.0 3.8.6 3.7.9 3.6.12 2.7.18
+        /home/{{ username }}/.pyenv/bin/pyenv global 3.9.10 3.9.0 3.8.6 3.7.9 3.6.12 2.7.18
       args:
         creates: "/home/{{ username }}/.pyenv/version"
         executable: /bin/bash
 
-    - name: PYENV - Install pipenv, flake8, black for 3.9.0
+    - name: PYENV - Install pipenv, flake8, black for 3.9.10
       become_user: "{{ username }}"
       shell: |
-        /home/{{ username }}/.pyenv/versions/3.9.0/bin/pip install pipenv flake8 black isort
+        /home/{{ username }}/.pyenv/versions/3.9.10/bin/pip install pipenv flake8 black isort
       args:
-        creates: "/home/{{ username }}/.pyenv/versions/3.9.0/lib/python3.9/site-packages/pipenv"
+        creates: "/home/{{ username }}/.pyenv/versions/3.9.10/lib/python3.9/site-packages/pipenv"
         executable: /bin/bash
 
     - name: SYSCTL - Adjust number of watched files
