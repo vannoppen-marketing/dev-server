@@ -6,8 +6,7 @@ I use this playbook to get my personal development server up and running.
 
 To get this running on a fresh Ubuntu server:
 
-    sudo apt update
-    sudo apt install --yes ansible
+    pip install ansible psycopg2
     ansible-pull --url https://github.com/vannoppen-marketing/dev-server/ playbook.yml
     sudo reboot
 

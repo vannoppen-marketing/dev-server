@@ -186,13 +186,22 @@
         executable: /bin/bash
       loop:
         - v14.15.0
+        - v14.19.1
+        - v14.19.3
+
+    - name: NVM - Set default node version
+      become_user: "{{ username }}"
+      shell: |
+        . /home/{{ username }}/.nvm/nvm.sh && nvm alias default 14.19.3
+      args:
+        executable: /bin/bash
 
     - name: NVM - Install yarn
       become_user: "{{ username }}"
       shell: |
         . /home/{{ username }}/.nvm/nvm.sh && npm install -g yarn
       args:
-        creates: "/home/{{ username }}/.nvm/versions/node/v14.15.0/bin/yarn"
+        creates: "/home/{{ username }}/.nvm/versions/node/v14.19.3/bin/yarn"
         executable: /bin/bash
 
     - name: NVM - Install gulp-cli
@@ -200,7 +209,7 @@
       shell: |
         . /home/{{ username }}/.nvm/nvm.sh && npm install -g gulp-cli
       args:
-        creates: "/home/{{ username }}/.nvm/versions/node/v14.15.0/bin/gulp"
+        creates: "/home/{{ username }}/.nvm/versions/node/v14.19.3/bin/gulp"
         executable: /bin/bash
 
     - name: NVM - Install expo-cli
@@ -208,7 +217,7 @@
       shell: |
         . /home/{{ username }}/.nvm/nvm.sh && npm install -g expo-cli
       args:
-        creates: "/home/{{ username }}/.nvm/versions/node/v14.15.0/bin/expo"
+        creates: "/home/{{ username }}/.nvm/versions/node/v14.19.3/bin/expo"
         executable: /bin/bash
 
     - name: NVM - Install vercel
@@ -216,7 +225,7 @@
       shell: |
         . /home/{{ username }}/.nvm/nvm.sh && npm install -g vercel
       args:
-        creates: "/home/{{ username }}/.nvm/versions/node/v14.15.0/bin/vercel"
+        creates: "/home/{{ username }}/.nvm/versions/node/v14.19.3/bin/vercel"
         executable: /bin/bash
 
     - name: PYENV - Install pyenv
@@ -224,7 +233,7 @@
       git:
         repo: 'https://github.com/pyenv/pyenv.git'
         dest: "/home/{{ username }}/.pyenv"
-        version: v2.2.4
+        version: master
         depth: 1
 
     - name: PYENV - Add profile config
@@ -263,21 +272,63 @@
         - 3.8.6
         - 3.9.0
         - 3.9.10
+        - 3.9.13
+        - 3.10.4
 
     - name: PYENV - Set global python
       become_user: "{{ username }}"
       shell: |
-        /home/{{ username }}/.pyenv/bin/pyenv global 3.9.10 3.9.0 3.8.6 3.7.9 3.6.12 2.7.18
+        /home/{{ username }}/.pyenv/bin/pyenv global 3.10.4 3.9.13 3.9.10 3.9.0 3.8.6 3.7.9 3.6.12 2.7.18
       args:
         creates: "/home/{{ username }}/.pyenv/version"
         executable: /bin/bash
 
-    - name: PYENV - Install pipenv, flake8, black for 3.9.10
+    - name: PYENV - Install pipenv
       become_user: "{{ username }}"
       shell: |
-        /home/{{ username }}/.pyenv/versions/3.9.10/bin/pip install pipenv flake8 black isort psycopg2 ansible
+        /home/{{ username }}/.pyenv/versions/3.10.4/bin/pip install pipenv
       args:
-        creates: "/home/{{ username }}/.pyenv/versions/3.9.10/lib/python3.9/site-packages/pipenv"
+        creates: "/home/{{ username }}/.pyenv/versions/3.10.4/lib/python3.10/site-packages/pipenv"
+        executable: /bin/bash
+
+    - name: PYENV - Install flake8
+      become_user: "{{ username }}"
+      shell: |
+        /home/{{ username }}/.pyenv/versions/3.10.4/bin/pip install flake8
+      args:
+        creates: "/home/{{ username }}/.pyenv/versions/3.10.4/lib/python3.10/site-packages/flake8"
+        executable: /bin/bash
+
+    - name: PYENV - Install black
+      become_user: "{{ username }}"
+      shell: |
+        /home/{{ username }}/.pyenv/versions/3.10.4/bin/pip install black
+      args:
+        creates: "/home/{{ username }}/.pyenv/versions/3.10.4/lib/python3.10/site-packages/black"
+        executable: /bin/bash
+
+    - name: PYENV - Install isort
+      become_user: "{{ username }}"
+      shell: |
+        /home/{{ username }}/.pyenv/versions/3.10.4/bin/pip install isort
+      args:
+        creates: "/home/{{ username }}/.pyenv/versions/3.10.4/lib/python3.10/site-packages/isort"
+        executable: /bin/bash
+
+    - name: PYENV - Install psycopg2
+      become_user: "{{ username }}"
+      shell: |
+        /home/{{ username }}/.pyenv/versions/3.10.4/bin/pip install psycopg2
+      args:
+        creates: "/home/{{ username }}/.pyenv/versions/3.10.4/lib/python3.10/site-packages/psycopg2"
+        executable: /bin/bash
+
+    - name: PYENV - Install ansible
+      become_user: "{{ username }}"
+      shell: |
+        /home/{{ username }}/.pyenv/versions/3.10.4/bin/pip install ansible
+      args:
+        creates: "/home/{{ username }}/.pyenv/versions/3.10.4/lib/python3.10/site-packages/ansible"
         executable: /bin/bash
 
     - name: SYSCTL - Adjust number of watched files
